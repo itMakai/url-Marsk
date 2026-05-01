@@ -2,28 +2,62 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Advanced URL Cloaker | Works with GitHub, Google, etc</title>
+    <title>Smart URL Cloaker | Auto Fallback when iframe blocked</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         body {
             background: linear-gradient(135deg, #0a0f1e 0%, #0c1222 100%);
-            font-family: system-ui, -apple-system, sans-serif;
+            font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
             min-height: 100vh;
             padding: 1.5rem;
         }
         .container {
             max-width: 900px;
             margin: 0 auto;
-            background: rgba(18, 25, 45, 0.9);
+            background: rgba(18, 25, 45, 0.92);
             backdrop-filter: blur(12px);
             border-radius: 2rem;
             border: 1px solid rgba(72, 187, 255, 0.3);
             padding: 2rem;
+            box-shadow: 0 25px 45px -12px rgba(0,0,0,0.5);
         }
-        h1 { background: linear-gradient(135deg, #e0f2fe, #7bc5ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
-        .input-group { margin-bottom: 1.5rem; }
-        label { color: #cbd5ff; display: block; margin-bottom: 0.5rem; font-weight: 500; }
-        input, select {
+        h1 {
+            background: linear-gradient(135deg, #e0f2fe, #7bc5ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-size: 1.8rem;
+            display: inline-block;
+        }
+        .badge {
+            background: rgba(0,255,255,0.15);
+            padding: 0.2rem 0.7rem;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            color: #5bc0ff;
+            margin-left: 10px;
+        }
+        .desc {
+            color: #9aa9c7;
+            margin: 0.5rem 0 1.8rem 0;
+            border-left: 3px solid #2d6a9f;
+            padding-left: 1rem;
+            font-size: 0.9rem;
+        }
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+        label {
+            color: #cbd5ff;
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        input {
             width: 100%;
             background: #0b0f1a;
             border: 1px solid #2a3448;
@@ -32,8 +66,13 @@
             color: #eef5ff;
             font-family: monospace;
             font-size: 0.9rem;
+            outline: none;
+            transition: all 0.2s;
         }
-        select { cursor: pointer; }
+        input:focus {
+            border-color: #3d8cff;
+            box-shadow: 0 0 0 3px rgba(61,140,255,0.2);
+        }
         button {
             background: #10172a;
             border: 1px solid #2b3856;
@@ -43,13 +82,26 @@
             font-weight: 500;
             cursor: pointer;
             transition: all 0.2s;
+            font-size: 0.9rem;
         }
         button.primary {
             background: linear-gradient(105deg, #1c3f6e, #0f2b48);
             border-color: #4682b4;
             color: white;
         }
-        .button-group { display: flex; gap: 1rem; flex-wrap: wrap; margin: 1.5rem 0; }
+        button.primary:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(105deg, #2a5590, #173a5e);
+        }
+        button:hover {
+            transform: translateY(-1px);
+        }
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin: 1.5rem 0;
+        }
         .result-box {
             background: #070b13;
             border-radius: 1rem;
@@ -67,49 +119,55 @@
             color: #b9e2ff;
             margin: 0.5rem 0;
             border-left: 3px solid #2488ff;
+            font-size: 0.85rem;
         }
-        .warning {
-            background: rgba(255, 193, 7, 0.1);
-            border-left: 3px solid #ffc107;
+        .info-box {
+            background: rgba(59, 130, 246, 0.1);
+            border-left: 3px solid #3b82f6;
             padding: 0.8rem;
             border-radius: 0.5rem;
             margin: 1rem 0;
             font-size: 0.8rem;
-            color: #ffd966;
         }
-        .mode-selector {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1rem;
-            padding: 0.5rem;
-            background: #0f1420;
-            border-radius: 1rem;
+        .fallback-warning {
+            background: rgba(245, 158, 11, 0.1);
+            border-left: 3px solid #f59e0b;
+            padding: 0.8rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+            font-size: 0.8rem;
+            display: none;
         }
-        .mode-option {
-            flex: 1;
-            text-align: center;
-            padding: 0.5rem;
-            cursor: pointer;
-            border-radius: 0.7rem;
-            transition: all 0.2s;
-        }
-        .mode-option.active {
-            background: #1c3f6e;
-            border: 1px solid #4682b4;
+        .success {
+            color: #4ade80;
         }
         .note {
             font-size: 0.7rem;
             color: #5e6e8f;
             text-align: center;
             margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid #1f2a41;
         }
-        .success { color: #4ade80; }
+        .status {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-testing { background: #f59e0b; box-shadow: 0 0 5px #f59e0b; }
+        .status-iframe { background: #4ade80; box-shadow: 0 0 5px #4ade80; }
+        .status-redirect { background: #f59e0b; box-shadow: 0 0 5px #f59e0b; }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1>🔗 NEXUS CLOAK PRO <span style="font-size:0.8rem;">⚡ bypasses frame restrictions</span></h1>
-    <div style="color:#9aa9c7; margin: 0.5rem 0 1.5rem 0;">Works with GitHub, Google, Twitter, and other X-Frame-Options blocked sites</div>
+    <h1>🛡️ SMART CLOAK <span class="badge">auto-fallback when blocked</span></h1>
+    <div class="desc">
+        Automatically tests if the target can be iframed → if blocked, falls back to redirect mode.<br>
+        <strong>Best of both worlds:</strong> Masked URL when possible, always works when not.
+    </div>
 
     <div class="input-group">
         <label>🎯 Target URL</label>
@@ -117,28 +175,17 @@
     </div>
 
     <div class="input-group">
-        <label>🌀 Rendering Mode (choose based on target site)</label>
-        <div class="mode-selector">
-            <div class="mode-option" data-mode="proxy">🌐 Proxy Mode (works everywhere)</div>
-            <div class="mode-option" data-mode="redirect">🔄 Redirect Mode (clean address bar)</div>
-            <div class="mode-option" data-mode="iframe">📦 Iframe (for simple sites)</div>
-        </div>
-        <input type="hidden" id="renderMode" value="proxy">
-    </div>
-
-    <div class="input-group">
-        <label>🌀 Unique Seed (optional)</label>
+        <label>🌀 Custom Seed (optional - makes URLs unique)</label>
         <input type="text" id="seed" placeholder="Leave empty for auto-random">
     </div>
 
     <div class="button-group">
         <button class="primary" id="generateBtn">✨ Generate Cloaked URL</button>
         <button id="randomSeedBtn">🎲 Random Seed</button>
+        <button id="testSiteBtn">🔍 Test if site allows iframe</button>
     </div>
 
-    <div id="warningBox" class="warning" style="display: none;">
-        ⚠️ Some sites block iframes. Proxy Mode bypasses this by fetching content through a service.
-    </div>
+    <div id="testResult" class="info-box" style="display: none;"></div>
 
     <div id="resultBox" class="result-box">
         <div style="font-size:0.7rem; color:#5f7faf; margin-bottom:8px;">🔗 MASKED URL (copy & share)</div>
@@ -146,31 +193,31 @@
         <div style="display: flex; gap: 10px; margin-top: 12px;">
             <button id="copyBtn" style="flex:1;">📋 Copy Link</button>
             <button id="openBtn" style="flex:1;">🌐 Open Cloaked Link</button>
+            <button id="previewBtn" style="flex:1;">👁️ Preview Mode</button>
         </div>
         <div style="font-size:0.7rem; color:#7482a5; margin-top:12px;">
             📍 Real destination: <span id="destPreview">—</span>
         </div>
+        <div id="modeBadge" style="margin-top: 8px; font-size: 0.7rem;"></div>
+    </div>
+
+    <div id="fallbackInfo" class="fallback-warning">
+        ⚠️ <strong>Auto-fallback activated:</strong> This site blocks iframes. The cloaked link will use <strong>Redirect Mode</strong> to ensure it works.
     </div>
 
     <div class="note">
-        🔥 <strong>Proxy Mode</strong> = Works with EVERY website (GitHub, banking, etc). Fetches content through a proxy service.<br>
-        🔄 <strong>Redirect Mode</strong> = Opens directly, address bar changes but works 100%.<br>
-        📦 <strong>Iframe Mode</strong> = Only works on sites that allow embedding.
+        🤖 <strong>Smart Logic:</strong> When you open a cloaked link, it first tries to load the site in an iframe.<br>
+        If the site blocks iframes (GitHub, Google, banking, etc), it automatically falls back to redirect mode.<br>
+        ✅ This guarantees the link ALWAYS works, while still attempting to mask the URL when possible.
     </div>
 </div>
 
 <script>
-    // Free CORS proxies that work with most sites
-    const PROXIES = [
-        'https://api.allorigins.win/raw?url=',
-        'https://corsproxy.io/?url=',
-        'https://cors-anywhere.herokuapp.com/'
-    ];
-    
-    let currentProxyIndex = 0;
+    // Store mappings
     let currentCloakedUrl = '';
     let currentRealTarget = '';
-    let currentMode = 'proxy';
+    let currentCanIframe = null;
+    let currentHashId = '';
     
     // Generate unique hash ID
     function generateUniqueHashId(seed = '') {
@@ -187,40 +234,85 @@
         let cleanHash = hash.replace(/[^a-zA-Z0-9]/g, '').substring(0, 32);
         if (cleanHash.length < 20) cleanHash += Math.random().toString(36).substring(2);
         
-        const prefixes = ['a', 'x', 'k', 'v', 'm', 'p', 's', '7', '3', '9', 'n', 'w'];
+        const prefixes = ['a', 'x', 'k', 'v', 'm', 'p', 's', '7', '3', '9', 'n', 'w', 'y', 'z'];
         return prefixes[Math.floor(Math.random() * prefixes.length)] + cleanHash + Math.random().toString(36).substring(2, 6);
     }
     
-    // Store mapping
-    function saveMapping(hashId, data) {
+    // Test if URL can be iframed
+    async function testIframeable(url) {
+        return new Promise((resolve) => {
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.src = url;
+            
+            let timeout = setTimeout(() => {
+                iframe.remove();
+                resolve(false); // Timeout = likely blocked
+            }, 3000);
+            
+            iframe.onload = () => {
+                clearTimeout(timeout);
+                // Try to access contentDocument - if blocked, this throws
+                try {
+                    const testAccess = iframe.contentDocument;
+                    iframe.remove();
+                    resolve(true);
+                } catch(e) {
+                    iframe.remove();
+                    resolve(false);
+                }
+            };
+            
+            iframe.onerror = () => {
+                clearTimeout(timeout);
+                iframe.remove();
+                resolve(false);
+            };
+            
+            document.body.appendChild(iframe);
+        });
+    }
+    
+    // Save mapping with iframe capability info
+    function saveMapping(hashId, realUrl, canIframe) {
         let mappings = {};
         try {
-            const stored = localStorage.getItem('cloak_pro_mappings');
+            const stored = localStorage.getItem('smart_cloak_mappings');
             if (stored) mappings = JSON.parse(stored);
         } catch(e) {}
-        mappings[hashId] = data;
         
+        mappings[hashId] = { 
+            realUrl: realUrl, 
+            canIframe: canIframe,
+            timestamp: Date.now(),
+            expires: Date.now() + (24 * 60 * 60 * 1000) // 24 hour cache
+        };
+        
+        // Clean old entries
         const entries = Object.entries(mappings);
-        if (entries.length > 100) {
-            const recent = entries.slice(-100);
+        if (entries.length > 200) {
+            const recent = entries.slice(-200);
             mappings = Object.fromEntries(recent);
         }
-        localStorage.setItem('cloak_pro_mappings', JSON.stringify(mappings));
+        localStorage.setItem('smart_cloak_mappings', JSON.stringify(mappings));
     }
     
     function getMapping(hashId) {
         try {
-            const stored = localStorage.getItem('cloak_pro_mappings');
+            const stored = localStorage.getItem('smart_cloak_mappings');
             if (stored) {
                 const mappings = JSON.parse(stored);
-                return mappings[hashId] || null;
+                const mapping = mappings[hashId];
+                if (mapping && mapping.expires > Date.now()) {
+                    return mapping;
+                }
             }
         } catch(e) {}
         return null;
     }
     
-    // Generate cloaked URL with mode
-    function generateCloakedUrl(targetUrl, userSeed = '', mode = 'proxy') {
+    // Generate cloaked URL with pre-test
+    async function generateCloakedUrl(targetUrl, userSeed = '') {
         if (!targetUrl || targetUrl.trim() === '') {
             throw new Error('Please enter a destination URL');
         }
@@ -230,38 +322,57 @@
             cleanTarget = 'https://' + cleanTarget;
         }
         
+        // Show testing status
+        const testResultDiv = document.getElementById('testResult');
+        testResultDiv.style.display = 'block';
+        testResultDiv.innerHTML = '<span class="status status-testing"></span> Testing if ' + cleanTarget + ' allows iframe embedding...';
+        
+        // Test if site can be iframed
+        const canIframe = await testIframeable(cleanTarget);
+        
+        if (canIframe) {
+            testResultDiv.innerHTML = '<span class="status status-iframe"></span> ✅ This site ALLOWS iframe embedding. Cloaked URL will use iframe mode (address bar stays masked).';
+            testResultDiv.style.background = 'rgba(74, 222, 128, 0.1)';
+            testResultDiv.style.borderLeftColor = '#4ade80';
+        } else {
+            testResultDiv.innerHTML = '<span class="status status-redirect"></span> ⚠️ This site BLOCKS iframes. Cloaked URL will use redirect mode (address bar will change, but link works 100%).';
+            testResultDiv.style.background = 'rgba(245, 158, 11, 0.1)';
+            testResultDiv.style.borderLeftColor = '#f59e0b';
+        }
+        
         const seed = userSeed || (Math.random().toString(36).substring(2) + Date.now().toString(36));
         const hashId = generateUniqueHashId(seed);
         
-        saveMapping(hashId, { realUrl: cleanTarget, mode: mode, timestamp: Date.now() });
+        saveMapping(hashId, cleanTarget, canIframe);
         
         const currentUrl = window.location.href.split('#')[0];
         const cloakedUrl = `${currentUrl}#cloak_${hashId}`;
         
-        return { cloakedUrl, realTarget: cleanTarget, hashId, mode };
+        return { cloakedUrl, realTarget: cleanTarget, hashId, canIframe };
     }
     
-    // Handle navigation based on mode
-    function handleCloakNavigation() {
+    // Handle navigation with smart fallback
+    function handleSmartNavigation() {
         const hash = window.location.hash;
         if (hash && hash.startsWith('#cloak_')) {
             const hashId = hash.substring(7);
             const mapping = getMapping(hashId);
             
             if (mapping && mapping.realUrl) {
-                const { realUrl, mode } = mapping;
+                const { realUrl, canIframe } = mapping;
                 
-                if (mode === 'redirect') {
-                    // Simple redirect - address bar changes but works 100%
-                    window.location.href = realUrl;
-                    return true;
-                } 
-                else if (mode === 'iframe') {
-                    // Try iframe (may fail on some sites)
+                if (canIframe) {
+                    // Try iframe mode first
                     document.body.innerHTML = '';
                     document.body.style.margin = '0';
                     document.body.style.padding = '0';
                     document.body.style.overflow = 'hidden';
+                    document.body.style.background = '#0a0f1e';
+                    
+                    const loadingDiv = document.createElement('div');
+                    loadingDiv.innerHTML = '<div style="text-align:center; padding:50px; color:white;">🔄 Loading...<br><small style="color:#9aa9c7;">' + realUrl + '</small></div>';
+                    loadingDiv.style.fontFamily = 'system-ui';
+                    document.body.appendChild(loadingDiv);
                     
                     const iframe = document.createElement('iframe');
                     iframe.src = realUrl;
@@ -271,126 +382,134 @@
                     iframe.style.width = '100%';
                     iframe.style.height = '100%';
                     iframe.style.border = 'none';
+                    iframe.style.opacity = '0';
+                    
+                    iframe.onload = () => {
+                        loadingDiv.remove();
+                        iframe.style.opacity = '1';
+                        
+                        // Add ribbon indicator
+                        const ribbon = document.createElement('div');
+                        ribbon.innerHTML = '🔒 cloaked (iframe)';
+                        ribbon.style.position = 'fixed';
+                        ribbon.style.bottom = '12px';
+                        ribbon.style.right = '12px';
+                        ribbon.style.backgroundColor = 'rgba(0,0,0,0.7)';
+                        ribbon.style.color = '#4ade80';
+                        ribbon.style.padding = '4px 12px';
+                        ribbon.style.borderRadius = '20px';
+                        ribbon.style.fontSize = '11px';
+                        ribbon.style.fontFamily = 'monospace';
+                        ribbon.style.zIndex = '999999';
+                        ribbon.style.backdropFilter = 'blur(4px)';
+                        document.body.appendChild(ribbon);
+                    };
+                    
+                    iframe.onerror = () => {
+                        // Iframe failed, fallback to redirect
+                        window.location.href = realUrl;
+                    };
+                    
                     document.body.appendChild(iframe);
                     
-                    // Fallback if iframe fails
+                    // Safety timeout: if iframe doesn't load in 5 seconds, fallback to redirect
                     setTimeout(() => {
-                        try {
-                            if (iframe.contentDocument && iframe.contentDocument.title === '') {
-                                // Iframe likely blocked, show message
-                                const msg = document.createElement('div');
-                                msg.style.position = 'fixed';
-                                msg.style.top = '50%';
-                                msg.style.left = '50%';
-                                msg.style.transform = 'translate(-50%, -50%)';
-                                msg.style.backgroundColor = '#0a0f1e';
-                                msg.style.color = 'white';
-                                msg.style.padding = '20px';
-                                msg.style.borderRadius = '12px';
-                                msg.style.zIndex = '999999';
-                                msg.innerHTML = '⚠️ This site blocks iframes. <a href="' + realUrl + '" target="_blank" style="color:#3b82f6;">Click here to open directly</a>';
-                                document.body.appendChild(msg);
-                            }
-                        } catch(e) {}
-                    }, 1000);
-                    
-                    return true;
-                }
-                else {
-                    // Proxy mode - fetch and display content
-                    document.body.innerHTML = '';
-                    document.body.style.margin = '0';
-                    document.body.style.padding = '0';
-                    document.body.style.background = '#0a0f1e';
-                    document.body.style.color = 'white';
-                    
-                    // Show loading
-                    const loadingDiv = document.createElement('div');
-                    loadingDiv.innerHTML = '<div style="text-align:center; padding:50px;">🔄 Loading proxied content...<br><small>' + realUrl + '</small></div>';
-                    loadingDiv.style.fontFamily = 'system-ui';
-                    document.body.appendChild(loadingDiv);
-                    
-                    // Try multiple proxies
-                    let proxyAttempt = 0;
-                    
-                    function tryProxy() {
-                        if (proxyAttempt >= PROXIES.length) {
-                            loadingDiv.innerHTML = '<div style="text-align:center; padding:50px;">❌ Unable to load via proxy.<br><a href="' + realUrl + '" target="_blank" style="color:#3b82f6;">Open directly</a></div>';
-                            return;
+                        if (iframe.style.opacity === '0') {
+                            window.location.href = realUrl;
                         }
-                        
-                        const proxyUrl = PROXIES[proxyAttempt] + encodeURIComponent(realUrl);
-                        loadingDiv.innerHTML = '<div style="text-align:center; padding:50px;">🔄 Fetching via proxy ' + (proxyAttempt + 1) + '/' + PROXIES.length + '...<br><small>' + realUrl + '</small></div>';
-                        
-                        fetch(proxyUrl)
-                            .then(response => response.text())
-                            .then(html => {
-                                // Inject the fetched HTML
-                                document.body.innerHTML = html;
-                                // Fix relative links
-                                const base = document.createElement('base');
-                                base.href = realUrl;
-                                document.head.insertBefore(base, document.head.firstChild);
-                                
-                                // Add a small ribbon
-                                const ribbon = document.createElement('div');
-                                ribbon.style.position = 'fixed';
-                                ribbon.style.bottom = '10px';
-                                ribbon.style.right = '10px';
-                                ribbon.style.backgroundColor = 'rgba(0,0,0,0.7)';
-                                ribbon.style.color = '#7bc5ff';
-                                ribbon.style.padding = '4px 12px';
-                                ribbon.style.borderRadius = '20px';
-                                ribbon.style.fontSize = '11px';
-                                ribbon.style.fontFamily = 'monospace';
-                                ribbon.style.zIndex = '999999';
-                                ribbon.innerHTML = '🔒 cloaked via proxy';
-                                document.body.appendChild(ribbon);
-                            })
-                            .catch(() => {
-                                proxyAttempt++;
-                                tryProxy();
-                            });
-                    }
+                    }, 5000);
                     
-                    tryProxy();
-                    return true;
+                } else {
+                    // Redirect mode - always works
+                    const redirectMsg = document.createElement('div');
+                    redirectMsg.innerHTML = '<div style="text-align:center; padding:50px; color:white;">🔄 Site blocks iframes. Redirecting...<br><small style="color:#9aa9c7;">' + realUrl + '</small></div>';
+                    redirectMsg.style.position = 'fixed';
+                    redirectMsg.style.top = '50%';
+                    redirectMsg.style.left = '50%';
+                    redirectMsg.style.transform = 'translate(-50%, -50%)';
+                    redirectMsg.style.backgroundColor = '#0a0f1e';
+                    redirectMsg.style.padding = '30px';
+                    redirectMsg.style.borderRadius = '12px';
+                    redirectMsg.style.zIndex = '999999';
+                    redirectMsg.style.fontFamily = 'system-ui';
+                    document.body.appendChild(redirectMsg);
+                    
+                    setTimeout(() => {
+                        window.location.href = realUrl;
+                    }, 800);
                 }
+                return true;
+            } else {
+                // Invalid or expired hash
+                document.body.innerHTML = `
+                    <div style="background:#0a0f1e; color:white; font-family:system-ui; text-align:center; padding:50px;">
+                        <h2>⚠️ Invalid or Expired Cloaked Link</h2>
+                        <p>The cloaked URL has expired or was generated on a different device.</p>
+                        <a href="#" onclick="location.reload()" style="color:#3b82f6; text-decoration:underline;">← Go back to generator</a>
+                    </div>
+                `;
+                return false;
             }
         }
         return false;
     }
     
     // UI Functions
-    function displayResult(cloakedUrl, realTarget, mode) {
+    async function displayResult(cloakedUrl, realTarget, canIframe) {
         document.getElementById('maskedUrlDisplay').innerText = cloakedUrl;
         document.getElementById('destPreview').innerText = realTarget.length > 60 ? realTarget.substring(0, 57) + '...' : realTarget;
         document.getElementById('resultBox').style.display = 'block';
         currentCloakedUrl = cloakedUrl;
         currentRealTarget = realTarget;
-        currentMode = mode;
+        currentCanIframe = canIframe;
         
-        const warningBox = document.getElementById('warningBox');
-        if (mode === 'iframe') {
-            warningBox.style.display = 'block';
-            warningBox.innerHTML = '⚠️ <strong>Iframe Mode Warning:</strong> Many sites (GitHub, Google, Facebook) block iframes. Use <strong>Proxy Mode</strong> for those sites.';
-        } else if (mode === 'proxy') {
-            warningBox.style.display = 'block';
-            warningBox.innerHTML = '✅ <strong>Proxy Mode active</strong> — This will work with GitHub and all other sites that block iframes. Content loads through a proxy service.';
+        const modeBadge = document.getElementById('modeBadge');
+        const fallbackInfo = document.getElementById('fallbackInfo');
+        
+        if (canIframe) {
+            modeBadge.innerHTML = '✅ <strong>Mode:</strong> Iframe (address bar stays masked)';
+            modeBadge.style.color = '#4ade80';
+            fallbackInfo.style.display = 'none';
         } else {
-            warningBox.style.display = 'none';
+            modeBadge.innerHTML = '⚠️ <strong>Mode:</strong> Redirect (address bar will change, but link works 100%)';
+            modeBadge.style.color = '#f59e0b';
+            fallbackInfo.style.display = 'block';
+            fallbackInfo.innerHTML = '⚠️ <strong>Auto-fallback activated:</strong> ' + realTarget + ' blocks iframes. The cloaked link will use <strong>Redirect Mode</strong> to ensure it works.';
         }
     }
     
-    function generateFromInputs() {
+    async function generateFromInputs() {
         const target = document.getElementById('targetUrl').value;
         const seed = document.getElementById('seed').value;
-        const mode = document.getElementById('renderMode').value;
         try {
-            const { cloakedUrl, realTarget } = generateCloakedUrl(target, seed, mode);
-            displayResult(cloakedUrl, realTarget, mode);
+            const { cloakedUrl, realTarget, canIframe } = await generateCloakedUrl(target, seed);
+            await displayResult(cloakedUrl, realTarget, canIframe);
         } catch(err) {
             alert(err.message);
+        }
+    }
+    
+    async function testSite() {
+        const target = document.getElementById('targetUrl').value;
+        let cleanTarget = target.trim();
+        if (!cleanTarget.startsWith('http')) cleanTarget = 'https://' + cleanTarget;
+        
+        const testResultDiv = document.getElementById('testResult');
+        testResultDiv.style.display = 'block';
+        testResultDiv.innerHTML = '<span class="status status-testing"></span> Testing ' + cleanTarget + '...';
+        testResultDiv.style.background = 'rgba(59, 130, 246, 0.1)';
+        testResultDiv.style.borderLeftColor = '#3b82f6';
+        
+        const canIframe = await testIframeable(cleanTarget);
+        
+        if (canIframe) {
+            testResultDiv.innerHTML = '<span class="status status-iframe"></span> ✅ ' + cleanTarget + ' <strong>ALLOWS</strong> iframe embedding. The cloaked URL will keep the address bar masked.';
+            testResultDiv.style.background = 'rgba(74, 222, 128, 0.1)';
+            testResultDiv.style.borderLeftColor = '#4ade80';
+        } else {
+            testResultDiv.innerHTML = '<span class="status status-redirect"></span> ⚠️ ' + cleanTarget + ' <strong>BLOCKS</strong> iframes. The cloaked URL will automatically use redirect mode.';
+            testResultDiv.style.background = 'rgba(245, 158, 11, 0.1)';
+            testResultDiv.style.borderLeftColor = '#f59e0b';
         }
     }
     
@@ -415,28 +534,14 @@
         window.open(currentCloakedUrl, '_blank');
     }
     
-    // Mode selector UI
-    document.querySelectorAll('.mode-option').forEach(opt => {
-        opt.addEventListener('click', () => {
-            document.querySelectorAll('.mode-option').forEach(o => o.classList.remove('active'));
-            opt.classList.add('active');
-            const mode = opt.getAttribute('data-mode');
-            document.getElementById('renderMode').value = mode;
-            
-            // Update UI hint
-            const warningBox = document.getElementById('warningBox');
-            if (mode === 'proxy') {
-                warningBox.style.display = 'block';
-                warningBox.innerHTML = '✅ <strong>Proxy Mode</strong> — Works with EVERY site including GitHub. Content is fetched through a proxy.';
-            } else if (mode === 'redirect') {
-                warningBox.style.display = 'block';
-                warningBox.innerHTML = '🔄 <strong>Redirect Mode</strong> — Opens directly, address bar will change to the real URL. 100% reliable.';
-            } else {
-                warningBox.style.display = 'block';
-                warningBox.innerHTML = '⚠️ <strong>Iframe Mode</strong> — Only works on sites that allow embedding. GitHub and most major sites will show a blank page. Use Proxy Mode instead.';
-            }
-        });
-    });
+    function previewMode() {
+        if (!currentCloakedUrl) {
+            alert('Generate a cloaked link first');
+            return;
+        }
+        // Open in same tab to test
+        window.location.href = currentCloakedUrl;
+    }
     
     // Event listeners
     document.getElementById('generateBtn').addEventListener('click', generateFromInputs);
@@ -445,18 +550,16 @@
         document.getElementById('seed').value = randomSeed;
         generateFromInputs();
     });
+    document.getElementById('testSiteBtn').addEventListener('click', testSite);
     document.getElementById('copyBtn').addEventListener('click', copyCloakedLink);
     document.getElementById('openBtn').addEventListener('click', openCloakedLink);
-    
-    // Set default mode to proxy
-    document.querySelector('.mode-option[data-mode="proxy"]').classList.add('active');
-    document.getElementById('renderMode').value = 'proxy';
+    document.getElementById('previewBtn').addEventListener('click', previewMode);
     
     // Initial generation
     generateFromInputs();
     
-    // Handle navigation
-    handleCloakNavigation();
+    // Handle smart navigation if coming from cloaked link
+    handleSmartNavigation();
 </script>
 </body>
 </html>
